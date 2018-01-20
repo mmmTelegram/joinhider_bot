@@ -1,0 +1,4 @@
+pytelegrambotapi
+runscript
+bottle
+gunicorn
