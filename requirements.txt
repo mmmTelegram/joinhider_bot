@@ -2,3 +2,4 @@ pytelegrambotapi
 runscript
 bottle
 gunicorn
+pymongo

@@ -9,6 +9,8 @@ import re
 
 import telebot
 
+from database import connect_db
+
 HELP = """*Join Hider Bot*
 
 This bot removes messages about new user joined the chat.
@@ -49,7 +51,7 @@ class InvalidCommand(Exception):
     pass
 
 
-def create_bot(api_token):
+def create_bot(api_token, db):
     bot = telebot.TeleBot(api_token)
 
     @bot.message_handler(commands=['start', 'help'])
@@ -67,6 +69,30 @@ def create_bot(api_token):
             else:
                 raise
         for user in msg.new_chat_members:
+            db.chat.find_one_and_update(
+                {'chat_id': msg.chat.id},
+                {
+                    '$set': {
+                        'chat_username': msg.chat.username,
+                    },
+                    '$setOnInsert': {
+                        'date': datetime.utcnow(),
+                    },
+                },
+                upsert=True,
+            )
+            db.joined_user.find_one_and_update(
+                {
+                    'chat_id': msg.chat.id,
+                    'user_id': user.id,
+                },
+                {'$set': {
+                    'chat_username': msg.chat.username,
+                    'user_username': user.username,
+                    'date': datetime.utcnow(),
+                }},
+                upsert=True,
+            )
             logging.debug('Removed join message for user %s' % (
                 user.username or '#%d' % user.id
             ))
@@ -86,7 +112,8 @@ def init_bot_with_mode(mode):
     else:
         token = config['api_token']
 
-    bot = create_bot(token)
+    db = connect_db()
+    bot = create_bot(token, db)
 
     return bot
 
