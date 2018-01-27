@@ -13,7 +13,7 @@ from database import connect_db
 
 HELP = """*Join Hider Bot*
 
-This bot removes messages about new user joined the chat.
+This bot removes messages about new user joined or left the chat.
 
 *Commands*
 
@@ -93,8 +93,48 @@ def create_bot(api_token, db):
                 }},
                 upsert=True,
             )
-            logging.debug('Removed join message for user %s' % (
-                user.username or '#%d' % user.id
+            logging.debug('Removed join message for user %s at chat %d' % (
+                user.username or '#%d' % user.id,
+                msg.chat.id
+            ))
+
+    @bot.message_handler(content_types=['left_chat_member'])
+    def handle_left_chat_member(msg):
+        try:
+            bot.delete_message(msg.chat.id, msg.message_id)
+        except Exception as ex:
+            if 'message to delete not found' in str(ex):
+                logging.error('Failed to delete join message: %s' % ex)
+            else:
+                raise
+        for user in [msg.left_chat_member]:
+            db.chat.find_one_and_update(
+                {'chat_id': msg.chat.id},
+                {
+                    '$set': {
+                        'chat_username': msg.chat.username,
+                    },
+                    '$setOnInsert': {
+                        'date': datetime.utcnow(),
+                    },
+                },
+                upsert=True,
+            )
+            db.left_user.find_one_and_update(
+                {
+                    'chat_id': msg.chat.id,
+                    'user_id': user.id,
+                },
+                {'$set': {
+                    'chat_username': msg.chat.username,
+                    'user_username': user.username,
+                    'date': datetime.utcnow(),
+                }},
+                upsert=True,
+            )
+            logging.debug('Removed left message for user %s at chat %d' % (
+                user.username or '#%d' % user.id,
+                msg.chat.id
             ))
 
     return bot
