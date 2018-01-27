@@ -24,10 +24,9 @@ This bot removes messages about new user joined or left the chat.
 - Add bot as ADMIN to the chat group
 - Allow bot to delete messages, any other admin permissions are not required
 
-*Support*
+*Questions, Feedback*
 
-Admin telegram: @madspectator
-Admin email: lorien@lorien.name
+Support group: [@tgrambots](https://t.me/tgrambots)
 
 *Open Source*
 
